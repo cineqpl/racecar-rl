@@ -12,7 +12,7 @@ covers x in [col, col + 1) and y in [row, row + 1).
 import heapq
 import math
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -29,6 +29,7 @@ MAX_SIZE = (1600, 1200)
 BLEND_TOLERANCE = 20.0  # max RGB distance from a blend of two reference colours
 MAX_SNAPPED_FRACTION = 0.02  # max share of pixels outside the strict ranges
 HEADING_BAND = (25.0, 35.0)  # distances from the start used to derive the heading
+FINISH_LENGTH = 60.0  # the finish area is the last this-many px of the track (see test_track.py for why 60)
 
 _SQRT2 = math.sqrt(2.0)
 
@@ -44,6 +45,10 @@ class Track:
     length: float  # largest finite distance
     start_pos: tuple[float, float]  # (x, y), centre of the start patch
     start_heading: float  # radians, 0 = +x, positive turns toward +y
+    finish: np.ndarray = field(init=False)  # (H, W) bool, the last FINISH_LENGTH px of the track
+
+    def __post_init__(self) -> None:
+        self.finish = self.mask & (self.dist > self.length - FINISH_LENGTH)
 
     @classmethod
     def load(

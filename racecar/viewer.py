@@ -26,6 +26,7 @@ MARGIN = 240  # width of the sidebar on the right, in screen pixels
 MAX_RAY_LEN = 2000.0  # pixels; effectively uncapped on tracks of this size
 DEFAULT_RAYS = 9
 RAY_RGB = (255, 255, 0)  # yellow
+FINISH_RGB = (0, 200, 0)  # green
 RAY_WIDTH = 2  # screen pixels
 
 
@@ -77,10 +78,11 @@ def ray_endpoints(
 
 
 def render(track: Track) -> Image.Image:
-    """The track as an image: black track, white walls, red start patch."""
+    """The track as an image: black track, white walls, red start patch, green finish area."""
     rgb = np.full(track.mask.shape + (3,), 255, dtype=np.uint8)
     rgb[track.mask] = (0, 0, 0)
     rgb[track.mask & (track.dist == 0)] = (255, 0, 0)
+    rgb[track.finish] = FINISH_RGB
     return Image.fromarray(rgb)
 
 

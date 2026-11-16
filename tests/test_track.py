@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from PIL import Image, ImageDraw
 
-from racecar.track import Track, TrackValidationError
+from racecar.track import FINISH_LENGTH, Track, TrackValidationError
 from racecar.track_gen import BLACK, RED, SMALL_LIMITS, WHITE, corridor_image
 
 RACETRACK1 = Path(__file__).parent / "data" / "racetrack1.bmp"
@@ -62,6 +62,23 @@ def test_track_running_off_the_image_edge_is_not_a_loop(tmp_path):
     img = corridor_image()
     ImageDraw.Draw(img).rectangle([25, 10, img.width - 1, 29], fill=BLACK)
     load(img, tmp_path)  # must not raise
+
+
+def test_finish_is_the_last_stretch_of_the_track(tmp_path):
+    t = load(corridor_image(), tmp_path)  # 100 px long, finish = last 60 px
+    assert t.finish[20, 110] and t.finish[20, 70] and not t.finish[20, 60]
+    assert not (t.finish & ~t.mask).any()  # never on walls
+    assert (t.dist[t.finish] > t.length - FINISH_LENGTH).all()
+
+
+def test_real_track_finish_covers_the_whole_end_line():
+    # Distances are shortest paths from the start, so they differ across the track
+    # (on racetrack1 by 25 px between the two edges at the end wall). The finish
+    # area must be thick enough that every path to the end wall crosses it.
+    t = Track.load(RACETRACK1)
+    assert t.finish[811:873, 608].all()  # every pixel along the end wall (x=608, rows 811-872)
+    ys, xs = t.finish.nonzero()
+    assert xs.max() <= 608 and xs.min() >= 608 - 70  # within ~one track width of the wall
 
 
 def test_real_track_loads():

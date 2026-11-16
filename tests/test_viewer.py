@@ -7,7 +7,7 @@ from PIL import ImageTk  # noqa: F401  (fail early if Pillow's Tk support is mis
 from racecar.track import Track
 from racecar.track_gen import SMALL_LIMITS, corridor_image
 from racecar.viewer import (
-    MARGIN, RAY_RGB, build_window, describe_point, ray_endpoints, ray_lengths, rays_overlay, render,
+    FINISH_RGB, MARGIN, RAY_RGB, build_window, describe_point, ray_endpoints, ray_lengths, rays_overlay, render,
 )
 
 
@@ -52,9 +52,16 @@ def test_is_start(track):
 def test_render_colours(track):
     img = render(track)
     assert img.size == (track.mask.shape[1], track.mask.shape[0])
-    assert img.getpixel((70, 20)) == (0, 0, 0)
+    assert img.getpixel((50, 20)) == (0, 0, 0)
     assert img.getpixel((22, 20)) == (255, 0, 0)
     assert img.getpixel((70, 2)) == (255, 255, 255)
+
+
+def test_render_highlights_the_finish_area_in_green(track):
+    img = render(track)
+    assert img.getpixel((110, 20)) == FINISH_RGB  # last 60 px of the 100 px corridor
+    assert img.getpixel((60, 20)) == (0, 0, 0)  # before it
+    assert img.getpixel((110, 2)) == (255, 255, 255)  # walls stay white
 
 
 # --- rays ---------------------------------------------------------------------
