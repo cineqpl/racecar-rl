@@ -34,3 +34,7 @@ def corridor_image(length: int = 100, width: int = 20, scale: int = 1) -> Image.
 
 def make_corridor(path: Path, length: int = 100, width: int = 20) -> None:
     corridor_image(length, width).save(path)
+
+
+# Size limits that let small synthetic images pass `Track.load` validation.
+SMALL_LIMITS = dict(min_size=(1, 1), max_size=(10_000, 10_000))

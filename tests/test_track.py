@@ -5,17 +5,15 @@ import pytest
 from PIL import Image, ImageDraw
 
 from racecar.track import Track, TrackValidationError
-from racecar.track_gen import BLACK, RED, WHITE, corridor_image
+from racecar.track_gen import BLACK, RED, SMALL_LIMITS, WHITE, corridor_image
 
-# Test images are small, so relax the size limits that real tracks must meet.
-SMALL = dict(min_size=(1, 1), max_size=(10_000, 10_000))
 RACETRACK1 = Path(__file__).parent / "data" / "racetrack1.bmp"
 
 
 def load(img: Image.Image, tmp_path: Path, **kwargs) -> Track:
     path = tmp_path / "track.bmp"
     img.save(path)
-    return Track.load(path, **{**SMALL, **kwargs})
+    return Track.load(path, **{**SMALL_LIMITS, **kwargs})
 
 
 # --- happy path -------------------------------------------------------------
