@@ -92,6 +92,8 @@
 
 ### Task 4: Car physics
 
+> **REVISED 2026-11-16 (done; see `racecar/car.py`, `tests/test_car.py`).** Speed follows `dv/dt = a₀·max(u,0) − b·max(−u,0) − (a₀/vmax)·v` (exponential approach to the top speed, constant-force braking, no separate drag, no clamp except `speed >= 0`). Steering input `s` is a fraction of the grip-limited angle `min(max_steer, atan(wheelbase·max_lateral_accel / v²))`. Defaults: `wheelbase=14`, `max_speed=100`, `max_accel=40`, `max_brake=80`, `max_lateral_accel=50`, `max_steer=0.5`; `CarParams` and `CarState` are frozen dataclasses. The original Task 4 text below is superseded.
+
 **Files:**
 - Create: `racecar/car.py`
 - Test: `tests/test_car.py`
@@ -107,6 +109,12 @@
 - [ ] **Step 5: Commit** `feat: kinematic bicycle car model`.
 
 ### Task 5: Environment
+
+> **REVISED 2026-11-16 (not yet built); read the text below with these changes.**
+> - **Prerequisite, in `Track`:** a finish band = drivable pixels with `dist > length − FINISH_LENGTH` (`FINISH_LENGTH = 20` px), exposed as `Track.finish: np.ndarray[bool]` and `Track.is_finish(x, y) -> bool`; tested on the corridor and `racetrack1.bmp`. The viewer later shows it in green and says "Finish area".
+> - **Swept check:** each step's path (old → new position) is sampled at most every 1 px. The first sample that is a wall means a crash (`terminated=True`, reward 0); the first sample in the finish band means a finish (`terminated=True`, `info["finished"] = True`, reward = progress at that sample). Tests: a 10 px step across the 5 px gap at the end of `racetrack1.bmp` crashes or finishes and never lands in the start patch; a step that would cross the finish band and then hit the wall counts as finished.
+> - **Progress:** the reward is the plain difference of `track.progress_at` values (no loop wrap); drop the ring and loop-closure tests; `info` also has `finished: bool`.
+> - **Defaults:** `max_steps=1500`; car parameters as in Task 4.
 
 **Files:**
 - Create: `racecar/env.py`
