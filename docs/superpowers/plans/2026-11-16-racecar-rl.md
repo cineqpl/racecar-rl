@@ -167,7 +167,9 @@ Built: `racecar/evaluation.py` (trajectories include the start state, so have `T
 - [x] **Step 2: [CLAUDE]** Implement both modules.
 - [x] **Step 3: Commit** `feat: evaluation, metrics logging, checkpoints`.
 
-### Task 8: REINFORCE and the training loop (NEXT)
+### Task 8: REINFORCE and the training loop (DONE 2026-11-17)
+
+Built: `racecar/train.py` (`TrainConfig`, `seed_everything`, `train`; training metrics go to `metrics.csv`, evaluation to a separate `eval.csv` because CSV columns are fixed by the first row), `racecar/algos/` (`Learner` protocol, `make_learner` registry, `reinforce.py` written by the owner), `scripts/train.py` (one flag per `TrainConfig` field, plus `--track`, `--run-dir`, `--log-level`), `.vscode/launch.json`, tests `tests/test_train.py`, `tests/test_reinforce.py`. Call `seed_everything` before building the learner (its initial weights are random). A 200-iteration run on `racetrack1.bmp` finishes the lap but is unstable.
 
 **Concept note first:** the policy gradient (why `grad J = E[sum_t grad log pi(a_t|s_t) * G_t]`), returns-to-go, why we normalise returns per batch.
 
@@ -181,13 +183,15 @@ Built: `racecar/evaluation.py` (trajectories include the start state, so have `T
 - `algos/reinforce.py`: `discounted_returns(rewards, gamma) -> np.ndarray`; `ReinforceLearner(obs_dim, cfg)` with loss `-(logp * G).mean()` over every step of the batch, returns normalised per batch (comment why).
 - `scripts/train.py`: flags `--track` (default `tests/data/racetrack1.bmp`), `--algo`, `--seed`, `--iterations`, `--run-dir` (default `runs/<algo>-<seed>`), and a VS Code launch configuration.
 
-- [ ] **Step 1: [CLAUDE]** Concept note and failing tests: `discounted_returns([1, 1, 1], 0.5) == [1.75, 1.5, 1.0]`; `make_learner("nope", ...)` raises `ValueError`; `update` on a batch of corridor episodes changes the policy parameters and returns a dict of floats; integration: on a corridor (short, `max_steps` reduced), 100 iterations, seed 0, `evaluate(...).lap_fraction >= 0.5` (tune `lr` and iterations, not the assertion, if flaky).
-- [ ] **Step 2: [YOU]** `discounted_returns`.
-- [ ] **Step 3: [YOU]** `ReinforceLearner.update`: returns, normalisation, the loss, `optimizer.zero_grad()` / `backward()` / `step()`.
-- [ ] **Step 4: [CLAUDE]** The registry, `train()`, the script and launch configuration.
-- [ ] **Step 5:** Run the corridor integration test, then `uv run python scripts/train.py --iterations 20`; expect `runs/reinforce-0/metrics.csv` with rows. **Commit** `feat: training loop, REINFORCE`.
+- [x] **Step 1: [CLAUDE]** Concept note and failing tests: `discounted_returns([1, 1, 1], 0.5) == [1.75, 1.5, 1.0]`; `make_learner("nope", ...)` raises `ValueError`; `update` on a batch of corridor episodes changes the policy parameters and returns a dict of floats; integration: on a corridor (short, `max_steps` reduced), 100 iterations, seed 0, `evaluate(...).lap_fraction >= 0.5` (tune `lr` and iterations, not the assertion, if flaky).
+- [x] **Step 2: [YOU]** `discounted_returns`.
+- [x] **Step 3: [YOU]** `ReinforceLearner.update`: returns, normalisation, the loss, `optimizer.zero_grad()` / `backward()` / `step()`.
+- [x] **Step 4: [CLAUDE]** The registry, `train()`, the script and launch configuration.
+- [x] **Step 5:** Run the corridor integration test, then `uv run python scripts/train.py --iterations 20`; expect `runs/reinforce-0/metrics.csv` with rows. **Commit** `feat: training loop, REINFORCE`.
 
-### Task 9: Value baseline
+### Task 9: Value baseline (DONE 2026-11-17)
+
+Built: `racecar/algos/baseline.py` (written by the owner; registered as `"baseline"`), tests `tests/test_baseline.py` (including one that pins the value net to plain regression on the returns, which catches a missing `.detach()`). Advantages are normalised per batch; `explained_variance` returns 0.0 for a constant target. To do when convenient: compare its learning curve with REINFORCE on the same seed (`--run-dir runs/cmp-reinforce` / `runs/cmp-baseline`, then TensorBoard).
 
 **Concept note first:** why subtracting a state-dependent baseline keeps the gradient unbiased but lowers its variance; what the value net is trained on.
 
@@ -195,11 +199,11 @@ Built: `racecar/evaluation.py` (trajectories include the start state, so have `T
 
 **Interfaces:** `explained_variance(pred, target) -> float` (`1 - Var(target - pred) / Var(target)`); `BaselineLearner(obs_dim, cfg)`: policy loss `-(logp * (G - V(obs).detach())).mean()`, value loss MSE to `G`; metrics include `value_loss` and `explained_variance`.
 
-- [ ] **Step 1: [CLAUDE]** Tests: `explained_variance(x, x) == 1.0`; predicting the mean gives `0.0` (within 1e-6); repeated `update` on one fixed batch lowers `value_loss`; corridor integration like Task 8.
-- [ ] **Step 2: [YOU]** `explained_variance` and `BaselineLearner`. Compare its learning curve with REINFORCE on the same seed.
-- [ ] **Step 3: Commit** `feat: actor-critic with value baseline`.
+- [x] **Step 1: [CLAUDE]** Tests: `explained_variance(x, x) == 1.0`; predicting the mean gives `0.0` (within 1e-6); repeated `update` on one fixed batch lowers `value_loss`; corridor integration like Task 8.
+- [x] **Step 2: [YOU]** `explained_variance` and `BaselineLearner`. Compare its learning curve with REINFORCE on the same seed.
+- [x] **Step 3: Commit** `feat: actor-critic with value baseline`.
 
-### Task 10: GAE
+### Task 10: GAE (NEXT)
 
 **Concept note first:** the bias-variance trade-off between one-step TD and Monte Carlo, and how `lambda` interpolates; why a time-out bootstraps from `V(last_obs)` and a crash or finish from 0 (the Review Focus item).
 
@@ -233,3 +237,11 @@ Built: `racecar/evaluation.py` (trajectories include the start state, so have `T
 - [ ] **Step 2: [CLAUDE]** Implement and hook into `train()` (only the first evaluation trajectory goes to the GIF).
 - [x] **Step 3: [CLAUDE]** The viewer replay mode. Done separately: `docs/superpowers/plans/2026-11-17-replay-viewer.md` (`racecar/replay.py`, `uv run python -m racecar.replay RUN_DIR`).
 - [ ] **Step 4:** Run `uv run pytest -v`, then a short PPO run; expect `runs/ppo-0/plots/` with PNG and GIF files. **Commit** `feat: trajectory plots, crash histogram, replay GIF`.
+
+## Follow-ups (not scheduled)
+
+- Overfitting / generalisation: one track, a fixed start and a deterministic evaluation let a policy memorise the lap. Measure it with random start offsets (training only) or a second track; the spec lists generalisation as a non-goal for now.
+- `racecar/train.py` calls `logging.basicConfig` at import, which makes the script's `--log-level` flag a no-op; keep only `logging.getLogger(__name__)` in the library.
+- Log a `mean_progress` training metric (needs `Episode` to keep the final `info["progress"]`).
+- Wrap `act` / `mean_action` in `torch.no_grad()`; move the real track out of `tests/data` into a top-level `tracks/` folder.
+- Replay viewer: detect a `--track` that differs from the training track; support runs trained with a non-default ray count (store both in the checkpoint config).
