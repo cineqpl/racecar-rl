@@ -231,5 +231,5 @@ Built: `racecar/evaluation.py` (trajectories include the start state, so have `T
 
 - [ ] **Step 1: [CLAUDE]** Tests (corridor, a 10-point trajectory): each function writes a non-empty file; GIF frame count `== ceil(10 / every)`; an empty crash list and a one-point trajectory do not raise.
 - [ ] **Step 2: [CLAUDE]** Implement and hook into `train()` (only the first evaluation trajectory goes to the GIF).
-- [ ] **Step 3: [CLAUDE]** The viewer replay mode.
+- [x] **Step 3: [CLAUDE]** The viewer replay mode. Done separately: `docs/superpowers/plans/2026-11-17-replay-viewer.md` (`racecar/replay.py`, `uv run python -m racecar.replay RUN_DIR`).
 - [ ] **Step 4:** Run `uv run pytest -v`, then a short PPO run; expect `runs/ppo-0/plots/` with PNG and GIF files. **Commit** `feat: trajectory plots, crash histogram, replay GIF`.
