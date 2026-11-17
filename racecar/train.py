@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import logging
 
 from racecar.algos.base import Learner
 from racecar.env import RaceEnv
@@ -13,6 +14,7 @@ from racecar.evaluation import evaluate
 from racecar.logging_utils import MetricsLogger, save_checkpoint
 from racecar.rollout import collect_episodes
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class TrainConfig:
@@ -60,6 +62,8 @@ def train(env: RaceEnv, eval_env: RaceEnv, learner: Learner, cfg: TrainConfig, r
                 "policy_entropy": float(torch.distributions.Normal(0.0, std).entropy().sum()),
                 **learner_metrics,
             }
+
+            logger.info(f"Iteration {iteration}: {metrics}, mean return {metrics['mean_return']:.1f}, mean length {metrics['mean_length']:.1f}")
             train_log.log(iteration, metrics)
             if iteration % cfg.eval_every == 0:
                 result = evaluate(eval_env, learner.policy)

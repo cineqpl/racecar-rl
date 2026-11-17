@@ -45,7 +45,7 @@ class RaceEnv:
         # Negative angles point to the car's left, positive to its right (y is
         # down in the image), so this orders the rays left to right.
         half = math.radians(ray_fov_deg) / 2
-        self._angles = np.linspace(-half, half, n_rays)
+        self.ray_angles = np.linspace(-half, half, n_rays)
         # Body points in the car frame (x forward, y toward the car's right, as in
         # the image). Collision uses all of them; the point car is the case of one.
         self.footprint = np.asarray(footprint, dtype=np.float64).reshape(-1, 2)
@@ -134,9 +134,9 @@ class RaceEnv:
     def _observe(self, crashed: bool = False) -> np.ndarray:
         s = self.state
         if crashed:
-            rays = np.zeros(len(self._angles), dtype=np.float32)
+            rays = np.zeros(len(self.ray_angles), dtype=np.float32)
         else:
-            rays = cast_rays(self.track, s.x, s.y, s.heading, self._angles, self.max_ray_len)
+            rays = cast_rays(self.track, s.x, s.y, s.heading, self.ray_angles, self.max_ray_len)
         obs = np.empty(self.obs_dim, dtype=np.float32)
         obs[:-1] = rays / self.max_ray_len
         obs[-1] = s.speed / self.params.max_speed
