@@ -130,7 +130,9 @@ Every task is still test-first: the test is written and seen failing before the 
 - Speed: roughly 0.1 ms per environment step, so one REINFORCE iteration of 16 episodes of up to 1500 steps can take seconds. Start with a smaller `max_steps` and fewer episodes. Batching the environment on the GPU is deferred until REINFORCE works on the CPU; keep the physics as plain functions of state so it stays possible.
 - The default Windows PyPI wheel of PyTorch is CPU-only. That is enough for now; a CUDA build needs PyTorch's own package index.
 
-### Task 6: PyTorch, networks and rollouts
+### Task 6: PyTorch, networks and rollouts (DONE 2026-11-17)
+
+Built: `racecar/nets.py` and `racecar/rollout.py` (written by the owner), tests `tests/test_nets.py`, `tests/test_rollout.py`.
 
 **Concept note first:** a short PyTorch introduction (tensors, `requires_grad` and autograd, `nn.Module` and `nn.Linear`, optimizers, `torch.no_grad()`, and what `torch.distributions.Normal` gives us: `log_prob`, `sample`, `entropy`).
 
@@ -142,14 +144,16 @@ Every task is still test-first: the test is written and seen failing before the 
 - `nets.py`: `GaussianPolicy(obs_dim, act_dim=2, hidden=(64, 64))` with a learned state-independent `log_std` (initial std about 0.6); `forward(obs: Tensor) -> Normal`; `act(obs: np.ndarray) -> (np.ndarray (2,), float)` (sampled, unclipped action and its log-prob summed over action dims); `mean_action(obs: np.ndarray) -> np.ndarray`. `ValueNet(obs_dim, hidden=(64, 64))` with `forward(obs) -> Tensor (batch,)`.
 - `rollout.py`: `@dataclass Episode(obs (T, D), actions (T, 2) unclipped, rewards (T,), logps (T,), terminated: bool, last_obs (D,))`; `collect_episodes(env, policy, n_episodes) -> list[Episode]`, under `torch.no_grad()`. `last_obs` is the observation after the final step, needed to bootstrap a truncated episode (Task 10).
 
-- [ ] **Step 1: [CLAUDE]** Give the concept note, install PyTorch and TensorBoard (`uv add torch tensorboard`), write the failing tests and the stubs.
+- [x] **Step 1: [CLAUDE]** Give the concept note, install PyTorch and TensorBoard (`uv add torch tensorboard`), write the failing tests and the stubs.
   - Policy `forward` on a `(4, 10)` batch has `.mean.shape == (4, 2)`; `act` returns shapes `(2,)` and a Python float; `mean_action` equals `forward(...).mean`; the log-prob of the mean action is greater than that of `mean + 5`; `ValueNet` output shape `(4,)`.
   - Rollout on a corridor env: per episode `len(obs) == len(actions) == len(rewards) == len(logps)`, `terminated` is a bool, `last_obs.shape == (10,)`; an env with `max_steps=5` gives `len == 5` and `terminated is False`.
-- [ ] **Step 2: [YOU]** `GaussianPolicy` and `ValueNet`: the layers, `forward`, `act`, `mean_action`. Run the tests until green.
-- [ ] **Step 3: [YOU]** `collect_episodes`. Run the tests until green.
-- [ ] **Step 4: Commit** `feat: policy/value networks and rollout collection`.
+- [x] **Step 2: [YOU]** `GaussianPolicy` and `ValueNet`: the layers, `forward`, `act`, `mean_action`. Run the tests until green.
+- [x] **Step 3: [YOU]** `collect_episodes`. Run the tests until green.
+- [x] **Step 4: Commit** `feat: policy/value networks and rollout collection`.
 
-### Task 7: Evaluation, metrics logging, checkpoints
+### Task 7: Evaluation, metrics logging, checkpoints (DONE 2026-11-17)
+
+Built: `racecar/evaluation.py` (trajectories include the start state, so have `T + 1` rows), `racecar/logging_utils.py` (checkpoints go to `run_dir/checkpoints/ckpt_<iteration>.pt`; a metric missing from a row is a blank cell, an unknown one raises `ValueError`), tests `tests/test_evaluation.py`, `tests/test_logging.py`.
 
 **Files:**
 - Create: `racecar/evaluation.py`, `racecar/logging_utils.py`
@@ -159,11 +163,11 @@ Every task is still test-first: the test is written and seen failing before the 
 - `evaluation.py`: `@dataclass EvalResult(mean_return, mean_length, crash_rate, finish_rate, lap_fraction, trajectories: list[np.ndarray] (each (T, 3): x, y, speed), crash_progress: list[float])`; `evaluate(env, policy, n_episodes=1) -> EvalResult`. Uses `mean_action` (no sampling noise); `lap_fraction` = mean of final `info["progress"] / track.length`; `finish_rate` from `info["finished"]`; `crash_progress` holds the final progress of each crashed episode. The start is fixed, so repeated runs are identical.
 - `logging_utils.py`: `MetricsLogger(run_dir)` with `log(step, metrics)` (appends a row to `run_dir/metrics.csv`, header on the first call, and writes TensorBoard scalars to `run_dir/tb`) and `close()`; `save_checkpoint(run_dir, policy, iteration, seed, config) -> Path`; `load_checkpoint(path) -> dict` (keys `policy_state`, `iteration`, `seed`, `config`).
 
-- [ ] **Step 1: [CLAUDE]** Tests: `evaluate` twice on one policy gives identical `mean_return`; a random policy has `0 <= crash_rate <= 1` and 3-column trajectories; `MetricsLogger` writes a CSV with a header and one row per call; a checkpoint round-trip restores identical policy outputs and the same seed.
-- [ ] **Step 2: [CLAUDE]** Implement both modules.
-- [ ] **Step 3: Commit** `feat: evaluation, metrics logging, checkpoints`.
+- [x] **Step 1: [CLAUDE]** Tests: `evaluate` twice on one policy gives identical `mean_return`; a random policy has `0 <= crash_rate <= 1` and 3-column trajectories; `MetricsLogger` writes a CSV with a header and one row per call; a checkpoint round-trip restores identical policy outputs and the same seed.
+- [x] **Step 2: [CLAUDE]** Implement both modules.
+- [x] **Step 3: Commit** `feat: evaluation, metrics logging, checkpoints`.
 
-### Task 8: REINFORCE and the training loop
+### Task 8: REINFORCE and the training loop (NEXT)
 
 **Concept note first:** the policy gradient (why `grad J = E[sum_t grad log pi(a_t|s_t) * G_t]`), returns-to-go, why we normalise returns per batch.
 
