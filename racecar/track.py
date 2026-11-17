@@ -116,6 +116,42 @@ class Track:
         """True if (x, y) is inside the red start patch (the only pixels at distance 0)."""
         return self.is_drivable(x, y) and self.progress_at(x, y) == 0.0
 
+    def sweep(
+        self, old_pts: np.ndarray, new_pts: np.ndarray, step: float = 1.0
+    ) -> tuple[str, float] | None:
+        """What do the straight paths from `old_pts` to `new_pts` run into first?
+
+        Both are (N, 2) arrays of x, y: the same N body points of the car before
+        and after a step (a point car has N = 1). Every path is sampled at the
+        same fractions along the step, at most `step` px apart; the end point is
+        sampled, the start point is not. Returns ("wall", f) or ("finish", f),
+        where f in (0, 1] is the fraction of the step at the first sample that
+        hit one (a wall wins a tie), or None if all paths are clear. Outside the
+        image counts as wall.
+        """
+        old_pts = np.asarray(old_pts, dtype=np.float64)
+        new_pts = np.asarray(new_pts, dtype=np.float64)
+        if old_pts.ndim != 2 or old_pts.shape[1] != 2 or old_pts.shape != new_pts.shape:
+            raise ValueError(
+                f"old_pts and new_pts must both be (N, 2); got {old_pts.shape} and {new_pts.shape}"
+            )
+        longest = float(np.linalg.norm(new_pts - old_pts, axis=1).max())
+        n = max(1, math.ceil(longest / step))
+        t = np.arange(1, n + 1) / n  # (n,)
+        samples = old_pts[None] + t[:, None, None] * (new_pts - old_pts)[None]  # (n, N, 2)
+        col = np.floor(samples[..., 0]).astype(int)
+        row = np.floor(samples[..., 1]).astype(int)
+        h, w = self.mask.shape
+        inside = (col >= 0) & (col < w) & (row >= 0) & (row < h)
+        col, row = np.clip(col, 0, w - 1), np.clip(row, 0, h - 1)
+        wall = (~inside | ~self.mask[row, col]).any(axis=1)  # (n,)
+        finish = (inside & self.finish[row, col]).any(axis=1)
+        event = wall | finish
+        if not event.any():
+            return None
+        k = int(event.argmax())
+        return ("wall" if wall[k] else "finish", float(t[k]))
+
     def progress_at(self, x: float, y: float) -> float:
         """Distance along the track at (x, y); inf if (x, y) is not drivable."""
         if not self.is_drivable(x, y):

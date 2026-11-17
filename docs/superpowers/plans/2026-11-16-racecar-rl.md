@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Python `>=3.12`, managed with `uv`; Windows 11, VS Code.
+- Python `>=3.12`, managed with `uv`; Windows 11, VS Code. Always run Python through `uv run` (e.g. `uv run python ...`, `uv run pytest`); never call bare `python`, it is not on the PATH. The project venv is Python 3.12.
 - No RL framework (no Gymnasium, Stable-Baselines3, CleanRL). PyTorch only for networks, autograd, optimizers.
 - Allowed libraries: PyTorch, NumPy, Pillow (bmp), matplotlib (display only), TensorBoard (logging only), pytest.
 - Real code in plain `.py` modules in the package `racecar/`; notebooks are not part of this plan.
