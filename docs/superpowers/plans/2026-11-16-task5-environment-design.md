@@ -1,6 +1,6 @@
 # Task 5: Environment, detailed design (draft, awaiting confirmation)
 
-Status: discussed 2026-11-16, updated 2026-11-17 (decisions 2-4 confirmed, crash reward open); **not yet built**. Replaces the stacked "REVISED" notes on Task 5 in `2026-11-16-racecar-rl.md` once confirmed.
+Status: discussed 2026-11-16, updated 2026-11-17 (all decisions confirmed); **built 2026-11-17** (`Track.sweep` in `racecar/track.py`, `RaceEnv` in `racecar/env.py`, tests in `tests/test_sweep.py` and `tests/test_env.py`). Replaces the stacked "REVISED" notes on Task 5 in `2026-11-16-racecar-rl.md` once confirmed.
 
 Already built: `Track` (bmp loading, geodesic distance, `finish` mask), `cast_rays`, `step_car` / `CarParams` / `CarState`, the viewer.
 
@@ -33,7 +33,7 @@ Attributes: `obs_dim` (= `n_rays + 1` = 10), `act_dim` (= 2), `track`, `params`,
 | Outcome | terminated | reward | notes |
 |---|---|---|---|
 | Path clear | no | `Δprogress * progress_scale - time_penalty` | plain difference of `progress_at`; backward driving is negative |
-| Hits a wall first | yes | **open, see section 4** (proposal: `-time_penalty * (max_steps - steps)`) | observation rays all 0; `info["crashed"] = True` |
+| Hits a wall first | yes `-time_penalty * (max_steps - steps_before)` | observation rays all 0; `info["crashed"] = True` |
 | Reaches finish first | yes | progress up to that point * scale - time_penalty | `info["finished"] = True` |
 | Step count reaches `max_steps` | no, `truncated = True` | as for a clear path | a time-out, not a terminal state |
 
@@ -69,9 +69,9 @@ Confirmed 2026-11-17:
 - The car is a point for now, but collision is written against a set of body points (`footprint`), so a convex-hull car is a later change of data only. Rendering it as a small rectangle comes with the viewer work.
 - A minimal time penalty (0.01 per step) so the car does not idle.
 
-Still open:
-- **Crash reward.** With a time penalty, "crash pays 0" makes crashing at once better than idling (return 0 vs about -15), so the agent may learn to crash on purpose. Proposal: a crash step pays `-time_penalty * (max_steps - steps)`, the penalty it forfeits by ending early, so crashing is never better than idling. Add a test: idling for the whole episode scores at least as much as crashing on step 1.
-- Reward scale 0.1 and ray cap 300 px (up from 150) were not explicitly confirmed.
+Also confirmed 2026-11-17:
+- Crash step reward is `-time_penalty * (max_steps - steps_before)`, the penalty forfeited by ending early, so a crash is never better than idling (test: `test_crash_is_never_better_than_idling`).
+- Reward scale 0.1 and ray cap 300 px.
 
 ## 5. Other things we agreed to do or raised
 
