@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Train (REINFORCE, racetrack1)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/train.py",
+            "args": ["--algo", "reinforce", "--iterations", "50", "--episodes-per-iter", "8", "--max-steps", "400"],
+            "console": "integratedTerminal"
+        }
+    ]
+}

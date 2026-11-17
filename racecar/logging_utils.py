@@ -10,13 +10,13 @@ from racecar.nets import GaussianPolicy
 
 
 class MetricsLogger:
-    """Appends one row per `log` call to `run_dir/metrics.csv` and writes the same
+    """Appends one row per `log` call to `run_dir/<csv_name>` and writes the same
     scalars to TensorBoard in `run_dir/tb`. The columns are fixed by the first call."""
 
-    def __init__(self, run_dir: Path) -> None:
+    def __init__(self, run_dir: Path, csv_name: str = "metrics.csv") -> None:
         self.run_dir = Path(run_dir)
         self.run_dir.mkdir(parents=True, exist_ok=True)
-        self._file = open(self.run_dir / "metrics.csv", "w", newline="")
+        self._file = open(self.run_dir / csv_name, "w", newline="")
         self._writer: csv.DictWriter | None = None
         self._tb = SummaryWriter(str(self.run_dir / "tb"))
 
