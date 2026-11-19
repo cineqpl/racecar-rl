@@ -59,8 +59,7 @@ def text(win) -> str:
 def test_starts_paused_on_frame_zero(make_window, driving):
     win = make_window(driving)
     assert win.frame == 0 and not win.playing
-    expected = [c for xy in car_polygon(driving.x[0], driving.y[0], driving.heading[0]) for c in xy]
-    assert win.canvas.coords("car") == pytest.approx(expected)
+    assert win.canvas.coords("car") == pytest.approx([driving.x[0], driving.y[0]])  # the sprite's centre
 
 
 def test_step_forward_and_back_clamp_at_both_ends(make_window, driving):
@@ -191,3 +190,31 @@ def test_arguments_are_parsed():
     assert args.scale == 1.0 and args.checkpoint is None and args.track.name == "racetrack1.bmp"
     args = parse_args(["runs/x", "--checkpoint", "5", "--scale", "0.75", "--track", "t.bmp"])
     assert args.checkpoint == 5 and args.scale == 0.75 and args.track.name == "t.bmp"
+
+
+def test_car_is_an_image_not_a_polygon(make_window, driving):
+    win = make_window(driving)
+    win.show(5)
+    assert len(win.canvas.find_withtag("car")) == 1
+    assert win.canvas.type("car") == "image"
+
+
+def test_car_image_is_centred_on_the_scaled_position(make_window, driving):
+    win = make_window(driving, scale=0.5)
+    win.show(7)
+    assert win.canvas.coords("car") == pytest.approx([driving.x[7] * 0.5, driving.y[7] * 0.5])
+
+
+def test_sprite_cache_reuses_images_for_nearby_headings(make_window, driving):
+    win = make_window(driving)
+    assert win._sprite_for(0.0) is win._sprite_for(0.01)
+    assert win._sprite_for(0.0) is not win._sprite_for(1.0)
+    assert win._sprite_for(-7.0) is not None and win._sprite_for(20.0) is not None
+
+
+def test_window_opens_without_assets(make_window, driving, monkeypatch, tmp_path):
+    monkeypatch.setattr("racecar.texture.ASSETS_DIR", tmp_path)
+    win = make_window(driving)
+    win.show(3)
+    assert win.canvas.type("car") == "polygon"
+    assert win._sprite_for(0.0) is None

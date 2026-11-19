@@ -18,7 +18,8 @@ from racecar.env import RaceEnv
 from racecar.logging_utils import load_checkpoint
 from racecar.nets import GaussianPolicy
 from racecar.track import Track
-from racecar.viewer import MARGIN, render
+from racecar.texture import load_car_sprite, render_textured, rotate_sprite
+from racecar.viewer import MARGIN
 
 
 @dataclass
@@ -124,9 +125,14 @@ class ReplayWindow:
         self.delay_ms = round(1000 * dt / self.speed)
         self._job: str | None = None
 
-        image = render(track)
+        image = render_textured(track)
         if scale != 1.0:
             image = image.resize((round(image.width * scale), round(image.height * scale)))
+        self._sprite = load_car_sprite()  # None when car.png is missing: a polygon is drawn instead
+        if self._sprite is not None and scale != 1.0:
+            self._sprite = self._sprite.resize(
+                (max(1, round(self._sprite.width * scale)), max(1, round(self._sprite.height * scale))))
+        self._sprites: dict[int, ImageTk.PhotoImage] = {}  # rotated sprites by heading in 2-degree steps
         w, h = image.size
         self.root = tk.Tk() if master is None else tk.Toplevel(master)
         self.root.title("Replay")
@@ -139,7 +145,10 @@ class ReplayWindow:
         self.text_id = self.canvas.create_text(
             w + 12, 12, anchor="nw", width=MARGIN - 24, font=("Segoe UI", 12), text="")
         self.canvas.create_line(0, 0, 0, 0, fill=TRAIL_COLOUR, width=2, tags="trail")
-        self.canvas.create_polygon(0, 0, 0, 0, 0, 0, fill=CAR_COLOUR, outline="white", tags="car")
+        if self._sprite is not None:
+            self.canvas.create_image(0, 0, tags="car")  # anchored at its centre
+        else:
+            self.canvas.create_polygon(0, 0, 0, 0, 0, 0, fill=CAR_COLOUR, outline="white", tags="car")
 
         bar = tk.Frame(self.root)
         bar.pack(fill="x", padx=8, pady=6)
@@ -167,8 +176,12 @@ class ReplayWindow:
         s = self.scale
         trail = np.stack([rec.x[: i + 1] * s, rec.y[: i + 1] * s], axis=1).ravel().tolist()
         self.canvas.coords("trail", *(trail if i > 0 else trail * 2))  # a line needs two points
-        corners = car_polygon(rec.x[i], rec.y[i], rec.heading[i])
-        self.canvas.coords("car", *[c * s for xy in corners for c in xy])
+        if self._sprite is not None:
+            self.canvas.itemconfig("car", image=self._sprite_for(rec.heading[i]))
+            self.canvas.coords("car", rec.x[i] * s, rec.y[i] * s)
+        else:
+            corners = car_polygon(rec.x[i], rec.y[i], rec.heading[i])
+            self.canvas.coords("car", *[c * s for xy in corners for c in xy])
         self.canvas.delete("ray")
         for length, (ex, ey) in zip(rec.rays[i], rec.ray_ends(i)):
             if length > 0:
@@ -178,6 +191,15 @@ class ReplayWindow:
         if int(float(self.slider.get())) != i:
             self.slider.set(i)
         self.canvas.itemconfig(self.text_id, text=self._sidebar_text())
+
+    def _sprite_for(self, heading: float) -> "ImageTk.PhotoImage | None":
+        """The car sprite turned to `heading`, cached per 2 degrees; None without a sprite."""
+        if self._sprite is None:
+            return None
+        key = round(math.degrees(heading) / 2) % 180
+        if key not in self._sprites:
+            self._sprites[key] = ImageTk.PhotoImage(rotate_sprite(self._sprite, math.radians(key * 2)))
+        return self._sprites[key]
 
     def step(self, delta: int) -> None:
         self.show(self.frame + delta)
